@@ -89,6 +89,7 @@ export default function PrerenderLoader (content) {
 }
 
 async function prerender (parentCompilation, request, options, inject, loader) {
+  console.log('Starting', options.documentUrl)
   const parentCompiler = getRootCompiler(parentCompilation.compiler);
   const context = parentCompiler.options.context || process.cwd();
   const customEntry = options.entry && ([].concat(options.entry).pop() || '').trim();
@@ -156,6 +157,8 @@ async function prerender (parentCompilation, request, options, inject, loader) {
 
     // @TODO: provide a non-DOM option to allow turning off JSDOM entirely.
 
+    console.log('Do JSDOM')
+
     const tpl = options.templateContent || '<!DOCTYPE html><html><head></head><body></body></html>';
     dom = new jsdom.JSDOM(tpl.replace(PRERENDER_REG, '<div id="PRERENDER_INJECT"></div>'), {
       // suppress console-proxied eval() errors, but keep console proxying
@@ -171,6 +174,7 @@ async function prerender (parentCompilation, request, options, inject, loader) {
       // don't allow inline event handlers & script tag exec
       runScripts: 'outside-only'
     });
+    console.log('JSDOM done')
     window = dom.window;
 
     // Find the placeholder node for injection & remove it
@@ -237,11 +241,13 @@ async function prerender (parentCompilation, request, options, inject, loader) {
   }
 
   if (typeof result === 'function') {
+    console.log('Is func')
     result = result(options.params || null);
   }
 
   // The entry can export or return a Promise in order to perform fully async prerendering:
   if (result && result.then) {
+    console.log('Is promise')
     result = await result;
   }
 
@@ -267,6 +273,8 @@ async function prerender (parentCompilation, request, options, inject, loader) {
   if (!/^<!DOCTYPE /mi.test(serialized)) {
     serialized = `<!DOCTYPE html>${serialized}`;
   }
+  console.log('Done', options.documentUrl)
+  window.close()
   return serialized;
 
   // // Returning or resolving to `null` / `undefined` defaults to serializing the whole document.
